@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>نظام إنشاء الشهادات التدريبية</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/docxtemplater/3.31.0/docxtemplater.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/2.6.1/jszip.min.js"></script>
+    <style>
+        @font-face {
+            font-family: 'Almarai-Bold';
+            unicode-range: U+0600-06FF, U+0750-077F, U+08A0-08FF;
+            src: url('Almarai-Bold.ttf') format('truetype');
+            font-weight: bold;
+        }
+        @font-face {
+            font-family: 'Candara-Light';
+            unicode-range: U+0000-00FF;
+            src: url('candara-light.ttf') format('truetype');
+            font-weight: normal;
+        }
+
+        body {
+            font-family: 'Almarai-Bold', 'Candara-Light', sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+        }
+        h1 {
+            color: #000;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 28px;
+            position: relative;
+            padding-bottom: 15px;
+        }
+        h1:after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            height: 3px;
+            background: #e56a54;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .logo {
+            width: 100px;
+            height: auto;
+            display: block;
+            margin: 0 auto 15px;
+        }
+        .company-name {
+            font-size: 24px;
+            color: #000;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            font-size: 14px;
+            color: #666;
+            font-family: 'Candara-Light', sans-serif;
+        }
+        .form-group {
+            margin-bottom: 25px;
+        }
+        label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: bold;
+            color: #000;
+            font-size: 16px;
+        }
+        input[type="file"], 
+        input[type="number"], 
+        input[type="text"] {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-family: 'Almarai-Bold', sans-serif;
+            background-color: #f9f9f9;
+            transition: all 0.3s ease;
+            font-size: 15px;
+        }
+        input[type="file"]:focus, 
+        input[type="number"]:focus, 
+        input[type="text"]:focus {
+            border-color: #e56a54;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(229, 106, 84, 0.2);
+        }
+        button {
+            font-family: 'Almarai-Bold', sans-serif;
+            color: white;
+            border: none;
+            padding: 15px 20px;
+            cursor: pointer;
+            border-radius: 8px;
+            font-size: 16px;
+            display: block;
+            width: 100%;
+            margin-top: 25px;
+            transition: all 0.3s ease;
+            font-weight: bold;
+        }
+        #generateBtn {
+            background-color: #e56a54;
+        }
+        #generateBtn:hover {
+            background-color: #d65843;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(214, 88, 67, 0.3);
+        }
+        #downloadBtn {
+            background-color: #1d3c34;
+            display: none;
+        }
+        #downloadBtn:hover {
+            background-color: #14442f;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(29, 60, 52, 0.3);
+        }
+        .status {
+            margin-top: 25px;
+            padding: 15px;
+            border-radius: 8px;
+            display: none;
+            font-family: 'Almarai-Bold', sans-serif;
+            text-align: center;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 2px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 2px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <img alt="Aims Logo" class="logo" src="Aims Logo.jpeg"/>
+        <h2 class="company-name">Aims Training Center</h2>
+    </div>
+    <div class="container">
+        <h1>نظام إنشاء الشهادات التدريبية</h1>
+        
+        <div class="form-group">
+            <label for="templateFile">رفع قالب الشهادة (ملف Word):</label>
+            <input accept=".docx" id="templateFile" type="file"/>
+        </div>
+        
+        <div class="form-group">
+            <label for="traineeCount">عدد المرشحين:</label>
+            <input id="traineeCount" min="1" type="number"/>
+        </div>
+        
+        <div class="form-group">
+            <label for="excelFile">رفع ملف البيانات (Excel):</label>
+            <input accept=".xlsx,.xls" id="excelFile" type="file"/>
+        </div>
+        
+        <div class="form-group">
+            <label for="programDate">تاريخ البرنامج:</label>
+            <input id="programDate" type="text" dir="auto" placeholder="مثال: 01 - 04 / 05 / 2025 م"/>
+        </div>
+        
+        <div class="form-group">
+            <label for="programTime">وقت البرنامج:</label>
+            <input id="programTime" type="text" dir="auto" placeholder="مثال: 25 ساعة تدريبية - حضوري"/>
+        </div>
+        
+        <div class="form-group">
+            <label for="programName">اسم البرنامج:</label>
+            <input id="programName" type="text" placeholder="اسم البرنامج التدريبي"/>
+        </div>
+        
+        <button id="generateBtn">إنشاء الشهادات</button>
+        <button id="downloadBtn">تحميل ملف الشهادات</button>
+        <div class="status" id="statusMessage"></div>
+    </div>
+
+    <footer class="footer">
+        Created by Dr. Hayan Saffan | AIME Training Center | Copy Rights 2025-2026
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const templateFileInput = document.getElementById('templateFile');
+            const traineeCountInput = document.getElementById('traineeCount');
+            const excelFileInput = document.getElementById('excelFile');
+            const generateBtn = document.getElementById('generateBtn');
+            const downloadBtn = document.getElementById('downloadBtn');
+            const statusMessage = document.getElementById('statusMessage');
+            
+            let generatedDoc = null;
+            
+            generateBtn.addEventListener('click', async function() {
+                if (!templateFileInput.files[0]) {
+                    showStatus('يرجى رفع قالب الشهادة', 'error');
+                    return;
+                }
+                
+                if (!traineeCountInput.value || traineeCountInput.value < 1) {
+                    showStatus('يرجى إدخال عدد المرشحين', 'error');
+                    return;
+                }
+                
+                if (!excelFileInput.files[0]) {
+                    showStatus('يرجى رفع ملف البيانات', 'error');
+                    return;
+                }
+                
+                const programDate = document.getElementById('programDate').value;
+                const programTime = document.getElementById('programTime').value;
+                const programName = document.getElementById('programName').value;
+                
+                if (!programDate || !programTime || !programName) {
+                    showStatus('يرجى إدخال تاريخ البرنامج، الوقت، واسم البرنامج', 'error');
+                    return;
+                }
+                
+                showStatus('جاري معالجة البيانات...', 'success');
+                
+                try {
+                    const excelData = await readExcel(excelFileInput.files[0]);
+                    const trainees = parseExcelData(excelData, parseInt(traineeCountInput.value));
+                    
+                    const templateFile = templateFileInput.files[0];
+                    const templateArrayBuffer = await readFileAsArrayBuffer(templateFile);
+                    
+                    generatedDoc = await generateCertificates(templateArrayBuffer, trainees, programDate, programTime, programName);
+                    
+                    showStatus('تم إنشاء الشهادات بنجاح! يمكنك الآن تحميل الملف.', 'success');
+                    downloadBtn.style.display = 'block';
+                } catch (error) {
+                    console.error('Error:', error);
+                    showStatus('حدث خطأ: ' + error.message, 'error');
+                }
+            });
+            
+            downloadBtn.addEventListener('click', function() {
+                if (generatedDoc) {
+                    saveAs(generatedDoc, 'الشهادات_التدريبية.docx');
+                }
+            });
+            
+            function showStatus(message, type) {
+                statusMessage.textContent = message;
+                statusMessage.className = 'status ' + type;
+                statusMessage.style.display = 'block';
+            }
+            
+            function readFileAsArrayBuffer(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result);
+                    reader.onerror = reject;
+                    reader.readAsArrayBuffer(file);
+                });
+            }
+            
+            function readExcel(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        resolve(workbook);
+                    };
+                    reader.onerror = reject;
+                    reader.readAsArrayBuffer(file);
+                });
+            }
+            
+            function parseExcelData(workbook, traineeCount) {
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+                
+                let certNumCol = -1;
+                let nameCol = -1;
+                
+                if (jsonData.length === 0) {
+                    throw new Error('ملف Excel فارغ');
+                }
+                
+                const headers = jsonData[0];
+                for (let i = 0; i < headers.length; i++) {
+                    if (headers[i] === 'رقم الشهادة') certNumCol = i;
+                    if (headers[i] === 'اسم المرشح') nameCol = i;
+                }
+                
+                if (certNumCol === -1 || nameCol === -1) {
+                    throw new Error('الرجاء التأكد من وجود عمود "رقم الشهادة" وعمود "اسم المرشح" في ملف Excel');
+                }
+                
+                const trainees = [];
+                for (let i = 1; i <= traineeCount && i < jsonData.length; i++) {
+                    const row = jsonData[i];
+                    if (row && row[certNumCol] !== undefined && row[nameCol] !== undefined) {
+                        trainees.push({
+                            certificateNumber: row[certNumCol],
+                            name: row[nameCol]
+                        });
+                    }
+                }
+                
+                if (trainees.length === 0) {
+                    throw new Error('لم يتم العثور على بيانات المرشحين في ملف Excel');
+                }
+                
+                return trainees;
+            }
+            
+            async function generateCertificates(templateArrayBuffer, trainees, programDate, programTime, programName) {
+                try {
+                    const JSZip = window.JSZip;
+                    const docxtemplater = window.docxtemplater;
+                    
+                    const zip = new JSZip(templateArrayBuffer);
+                    const doc = new docxtemplater();
+                    doc.loadZip(zip);
+                    
+                    // إضافة Unicode Markers للحفاظ على اتجاه النص
+                    const formattedDate = `\u202B${programDate}\u202C`;
+                    const formattedTime = `\u202B${programTime}\u202C`;
+                    
+                    const data = {
+                        certificates: trainees.map(trainee => ({
+                            name: trainee.name,
+                            certificateNumber: trainee.certificateNumber.toString(),
+                            programDate: formattedDate,
+                            programTime: formattedTime,
+                            programName: programName
+                        }))
+                    };
+                    
+                    doc.setData(data);
+                    
+                    try {
+                        doc.render();
+                    } catch (error) {
+                        console.error("Template error:", error);
+                        throw new Error("خطأ في القالب: تأكد من وجود العلامات {name}, {certificateNumber}, {programDate}, {programTime}, {programName} في ملف Word");
+                    }
+                    
+                    const out = doc.getZip().generate({
+                        type: "blob",
+                        mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    });
+                    
+                    return out;
+                } catch (error) {
+                    console.error("Generation error:", error);
+                    throw new Error("فشل إنشاء الشهادات: " + error.message);
+                }
+            }
+        });
+    </script>
+</body>
+</html>
